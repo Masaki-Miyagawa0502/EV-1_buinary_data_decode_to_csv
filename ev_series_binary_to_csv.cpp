@@ -1,5 +1,5 @@
 // Decode an EV Series binary log and write supported records to CSV.
-// Build:   g++ -std=c++17 -O2 decode_ev_series_to_csv.cpp -o decode_ev_series_to_csv
+// Build:   g++ -std=c++17 -O2 ev_series_binary_to_csv.cpp -o ev_series_binary_to_csv
 // Run:     ./decode_ev_series_to_csv input.bin output_prefix
 
 #include <cstdint>
@@ -44,21 +44,21 @@ const std::map<std::string, std::vector<std::string>> columns_by_type = {
 };
 
 ///符号なし16ビットに変換///
-std::uint16_t read_u16(const std::vector<std::uint_8_t>& bytes, std::size_t position){
+std::uint16_t read_u16(const std::vector<std::uint8_t>& bytes, std::size_t position){
     return static_cast<std::uint16_t>(bytes[position]) | 
                                      (static_cast<std::uint16_t>(bytes[position + 1]) << 8 ); 
 }
 
 ///符号なし32ビットに変換///
-std::uint32t read_u32(const std::vector<std::uint_8_t>& bytes, std::size_t position){
-    return static_cast<std::uint16_t>(bytes[position]) | 
-                                     (static_cast<std::uint16_t>(bytes[position + 1]) << 8 |
-                                     (static_cast<std::uint16_t>(bytes[position + 2]) << 16 |
-                                     (static_cast<std::uint16_t>(bytes[position + 3]) << 24); 
+std::uint32_t read_u32(const std::vector<std::uint8_t>& bytes, std::size_t position){
+    return static_cast<std::uint32_t>(bytes[position]) | 
+          (static_cast<std::uint32_t>(bytes[position + 1]) << 8) |
+          (static_cast<std::uint32_t>(bytes[position + 2]) << 16) |
+          (static_cast<std::uint32_t>(bytes[position + 3]) << 24); 
 } 
 
 ///符号あり16ビットに変換///
-std::int16_t read_i16(const std::vector<std::uint_8_t>& bytes, std::size_t position){
+std::int16_t read_i16(const std::vector<std::uint8_t>& bytes, std::size_t position){
     const uint16_t tmp = read_u16(bytes, position);
     std::int16_t result;
     std::memcpy(&result, &tmp, sizeof(result));
@@ -66,7 +66,7 @@ std::int16_t read_i16(const std::vector<std::uint_8_t>& bytes, std::size_t posit
 }
 
 ///符号あり32ビットに変換///
-std::int32_t read_i32(const std::vector<std::uint_8_t>& bytes, std::size_t position){
+std::int32_t read_i32(const std::vector<std::uint8_t>& bytes, std::size_t position){
     const uint32_t tmp = read_u32(bytes, position);
     std::int32_t result;
     std::memcpy(&result, &tmp, sizeof(result));
@@ -74,12 +74,40 @@ std::int32_t read_i32(const std::vector<std::uint_8_t>& bytes, std::size_t posit
 }
 
 ///浮動小数点に変換///
-float read_f32(const std::vector<std::uint_8_t>& bytes, std::size_t position){
+float read_f32(const std::vector<std::uint8_t>& bytes, std::size_t position){
     const uint32_t tmp = read_u32(bytes, position);
     float result;
     static_assert(sizeof(tmp) == sizeof(result), "This program requires 32-bit float.");
     std::memcpy(&result, &tmp, sizeof(result));
     return result;
+}
+
+//crcチェック
+uint16_t crc_check(const std::vector<std::uint8_t>& bytes, std::size_t begin, std::size_t end){
+    std::uint16_t crc = 0xFFFF;
+    for(std::size_t i=begin; i<end; ++i){
+        crc ^= static_cast<std::uint16_t>(bytes[i]) << 8;
+        for(int bit=0; bit<8; ++bit){
+            if(crc & 0x8000){
+                crc = static_cast<std::uint16_t>(crc << 1) ^ 0x1021;
+            }
+            else{
+                crc = static_cast<std::uint16_t>(crc << 1);
+            }
+        }
+    }
+
+    return crc;
+}
+
+std::string number_to_string(double value){
+    std::ostringstream out;
+    out << std::setprecision(10) << value;
+    return out.str();
+}
+
+void put(Record& record, const std::string& key, double value){
+    record.values[key] = number_to_string(value);
 }
 
 bool decode_frame(const std::vector<std::uint8_t>& bytes,
@@ -203,33 +231,6 @@ bool decode_frame(const std::vector<std::uint8_t>& bytes,
         return false;
     }
 }
-//crcチェック
-uint16_t crc_check(const std::vector<std::uint8_t>& bytes, std::size_t begin, std::size_t end){
-    std::uint16_t crc = 0xFFFF;
-    for(std::size_t i=begin; i<end; ++i){
-        crc ^= static_cast<std::uint16_t>(bytes[i]) << 8;
-        for(int bit=0; bit<8; ++bit){
-            if(crc & 0x8000){
-                crc = static_cast<std::uint16_t>(crc << 1) ^ 0x1021;
-            }
-            else{
-                crc = static_cast<std::uint16_t>(crc << 1);
-            }
-        }
-    }
-
-    return crc;
-}
-
-std::string number_to_string(double value){
-    std::ostringstream out;
-    out << std::setprecision(10) << value;
-    return out.str();
-}
-
-void put(Record& record, const std::string& key, double value){
-    record.value[key] = number_to_string();
-}
 
 void write_csv_header(std::ofstream& out, const std::vector<std::string>& columns){
     for(std::size_t i=0; i<columns.size(); ++i){
@@ -248,10 +249,10 @@ void data_add_to_csv(std::ofstream& out, Record& record, const std::vector<std::
         }
         const auto found = record.values.find(columns[i]);
         if(found != record.values.end()){
-            out << fuund->second;
+            out << found->second;
         }
-        out << "," ;
     }
+    out << "\n" ;
 }
 
 int main(int argc, char* argv[]){
@@ -306,8 +307,103 @@ int main(int argc, char* argv[]){
             return 1;
         }
 
-        write_csv_header(out, columns_by_type[item.first]);
+        write_csv_header(out, columns_by_type.at(item.first));
     }
     ///////////////////////////////
+
+    ///binデータをbytesに詰め込む///
+    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(input)), {});
+
+    Stats stats;
+    std::map<std::string, std::uint64_t> counts;
+    std::size_t position = 0;
+
+    while(position + 3 < bytes.size()){
+
+        //messageeの開始位置を見つけるまで読み取り位置を更新//
+        if(bytes[position] != 0xAA || bytes[position + 1] != 0x55){
+            ++stats.discarded_bytes;
+            ++position;
+            continue;
+        }
+
+        ///メッセージ長のエラーチェック///
+        const std::uint8_t payload_length = bytes[position + 2];
+        if(payload_length < 3){
+            ++stats.length_errors;
+            ++position;
+            continue;
+        }
+        
+        ///フレームサイズが、バイナリファイル全体に収まっているかをチェック///
+        const std::size_t frame_size = payload_length + 3;
+        if(position + frame_size > bytes.size()){
+            break;
+        }
+
+        ///データの整合性チェック///
+        const auto expected_crc = read_u16(bytes, position + frame_size - 2);
+        const auto actual_crc = crc_check(bytes, position, position + frame_size - 2);
+        if(expected_crc != actual_crc){
+            ++stats.crc_errors;
+            ++position;
+            continue;
+        }
+
+        ///CMDチェック///
+        const std::uint8_t command = bytes[position + 3];
+
+        ///CMDに応じたメッセージ長を紐付け///
+        std::map<std::uint8_t, std::uint8_t> expected_lengths = {
+            {0x10, 19},
+            {0x11, 23},
+            {0x12, 33},
+            {0x13, 73},
+            {0x14, 29}
+        };
+
+        /////0x10〜0x14以外のコマンドもあるっぽいので、その場合、未知コマンドとして処理して次のフレームまで処理位置を更新///
+        const auto expected = expected_lengths.find(command);
+        if (expected == expected_lengths.end()) {
+            ++stats.unknown_commands;
+            position += frame_size;
+            continue;
+        }
+
+        if (payload_length != expected->second) {
+            ++stats.length_errors;
+            position += frame_size;
+            continue;
+        }
+
+        ///csvに追加する///
+        Record record;
+        if(decode_frame(bytes, position, command, record)){
+            ++counts[record.type];
+            data_add_to_csv(outputs.at(record.type), record, columns_by_type.at(record.type));
+        }
+
+        position += frame_size;
+    }
+
+    std::cout << "Saved CSV files with prefix: "
+              << output_prefix << '\n';
+
+    std::uint64_t total = 0;
+    for (const auto& item : counts) {
+        std::cout << item.first << ": "
+                  << item.second << " rows\n";
+        total += item.second;
+    }
+
+    std::cout << "Total decoded rows: " << total << '\n'
+              << "CRC errors: " << stats.crc_errors << '\n'
+              << "Length errors: " << stats.length_errors << '\n'
+              << "Unknown commands skipped: "
+              << stats.unknown_commands << '\n'
+              << "Bytes skipped while searching for frames: "
+              << stats.discarded_bytes << '\n';
+
+    return 0;
 
 }
