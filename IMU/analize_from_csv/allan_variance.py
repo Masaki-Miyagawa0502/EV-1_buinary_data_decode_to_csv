@@ -47,7 +47,7 @@ for key in ev1_csv_jsondata:
 #     sbg_csv_list.append(sbg_csv_jsondata[key])
 ##########################################################
 
-###アラン分散結果(グラフ)の保存先###
+###結果(グラフ)の保存先###
 output_jsonfile = open("output.json", "r")
 output_jsondata = json.load(output_jsonfile)
 for key in output_jsondata:
@@ -57,10 +57,12 @@ for key in output_jsondata:
 ####################
 
 ##allan_data_keyに格納されたデータ項目に対する平均値を格納する配列とアラン分散値を格納する配列をを作成###
+###アラン分散用配列###
 ev1_average = {}
 sbg_average = {}
 ev1_allan_varialance = {}
 sbg_allan_varialance = {}
+######################
 
 for key in allan_jsondata:
     ev1_average[key] = []
@@ -75,10 +77,25 @@ for csv_num in range(len(ev1_csv_list)):
 #     sbg_allan_varialance[sbg_csv_list[csv_num]] = {}
 #     for key in allan_jsondata:
 #         sbg_allan_varialance[sbg_csv_list[csv_num]][key] = []
+
+###平均値計算用配列###
+ev1_all_data_average= {}
+sbg_all_data_average= {}
+######################
+
+for csv_num in range(len(ev1_csv_list)):
+    ev1_all_data_average[ev1_csv_list[csv_num]] = {}
+    for key in allan_jsondata:
+        ev1_all_data_average[ev1_csv_list[csv_num]][key] = []
+
+# for csv_num in range(len(sbg_csv_list)):
+#     sbg_all_data_average[sbg_csv_list[csv_num]] = {}
+#     for key in allan_jsondata:
+#         sbg_all_data_average[ev1_csv_list[csv_num]][key] = []
 ###################################################################################################
 
 
-###ev1_seriesの計算###
+###ev1_seriesのアラン分散計算###
 if len(ev1_csv_list) > 0:
     for csv_num in range(len(ev1_csv_list)):
         with open(ev1_csv_list[csv_num], newline="") as file:
@@ -132,7 +149,7 @@ if len(ev1_csv_list) > 0:
 
 ####################################################################
 
-###sbgの計算###
+###sbgのアラン分散計算###
 # if len(sbg_csv_list) > 0:
 #     for csv_num in range(len(sbg_csv_list)):
 #         with open(sbg_csv_list[csv_num], newline="") as file:
@@ -185,6 +202,59 @@ if len(ev1_csv_list) > 0:
 #                     sbg_allan_varialance[sbg_csv_list[csv_num]][key].append(allan_value)
 ####################################################################
 
+###ev1_seriesの平均値計算###
+if len(ev1_csv_list) > 0:
+    for csv_num in range(len(ev1_csv_list)):
+        with open(ev1_csv_list[csv_num], newline="") as file:
+            csv_data = csv.DictReader(file)
+            data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
+
+            for key in allan_data_key:
+
+                if key not in csv_data.fieldnames:
+                    continue
+
+                data_len = 0
+                value = 0 
+                average = 0
+
+                for row_data in data_list:
+                    if row_data[key] == "" :
+                        break
+                    else:
+                        data_len += 1
+                        value += float(row_data[key])
+                
+                average = value / data_len
+                ev1_all_data_average[ev1_csv_list[csv_num]][key].append(average)
+
+###sbgの平均値計算###
+# if len(sbg_csv_list) > 0:
+#     for csv_num in range(len(sbg_csv_list)):
+#         with open(sbg_csv_list[csv_num], newline="") as file:
+#             csv_data = csv.DictReader(file)
+#             data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
+
+#             for key in allan_data_key:
+
+#                 if key not in csv_data.fieldnames:
+#                     continue
+
+#                 data_len = 0
+#                 value = 0 
+#                 average = 0
+
+#                 for row_data in data_list:
+#                     if row_data[key] == "" :
+#                         average = value / data_len
+#                         sbg_all_data_average[sbg_csv_list[csv_num]][key].append(average)
+#                         break
+#                     else:
+#                         data_len += 1
+#                         value += float(row_data[key])
+
+
+
 ###アラン分散をプロット###
 marker_list = ["s", "o", "^", "v", "D", "x", "*"]
 for key in allan_data_key:
@@ -211,4 +281,34 @@ for key in allan_data_key:
     plt.legend()
     plt.grid(True, which="both")
     plt.savefig(output_dir / f"{key} Allan variance: EV-1 and SBG.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+##平均値をプロット###
+for key in allan_data_key:
+    plt.figure()  # 項目ごとに別の図を作る
+
+    if len(ev1_csv_list) == len(sbg_csv_list):
+        x = np.arange(1, len(ev1_csv_list))
+    else:
+        print("input_csv_num ev1 and sbg should be same")
+        
+    for csv_num in range(len(ev1_csv_list)):
+        y = np.array(ev1_all_data_average[ev1_csv_list[csv_num]][key])
+        
+        plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"EV-1_N{csv_num + 1}", marker=marker_list[csv_num], linestyle = "-")
+
+    # for csv_num in range(len(sbg_csv_list)):
+    #     y = np.array(sbg_all_data_average[sbg_csv_list[csv_num]][key])
+    #     plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"sbg_N{csv_num + 1}", marker=marker_list[csv_num], linestyle="--")
+
+    plt.xlabel("average_num")
+    if key in ("ax", "ay", "az"):
+        plt.ylabel("average_value [m/s^2]")
+    else:
+        plt.ylabel("average_value [°/s]")
+
+    plt.title(f"{key} average: EV-1 and SBG")
+    plt.legend()
+    plt.grid(True, which="both")
+    plt.savefig(output_dir / f"{key} all_data_average: EV-1 and SBG.png", dpi=300, bbox_inches="tight")
     plt.show()
