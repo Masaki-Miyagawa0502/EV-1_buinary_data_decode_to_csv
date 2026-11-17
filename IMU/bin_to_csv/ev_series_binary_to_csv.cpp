@@ -31,7 +31,7 @@ const std::map<std::string, std::vector<std::string>> columns_by_type = {
     {"imu", {"device_timestamp_ms", "gx", "gy", "gz", "ax", "ay", "az",
              "temperature_raw", "temperature_c"}},
     {"gnss", {"velocity", "up_velocity", "latitude_raw", "latitude_deg",
-              "longitude_raw", "longitude_deg", "altitude", "course", "data_exist",
+              "longitude_raw", "longitude_deg", "altitude", "true_heading_deg", "data_exist",
               "fix_mode", "sv_type", "hvar", "vvar", "hvar_speed", "vver_speed",
               "hvar_scaled", "vvar_scaled", "hvar_speed_scaled", "vver_speed_scaled",
               "pdop_raw", "hdop_raw", "vdop_raw", "pdop", "hdop", "vdop", "svnum",
