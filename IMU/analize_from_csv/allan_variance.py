@@ -40,11 +40,11 @@ ev1_csv_list = []
 for key in ev1_csv_jsondata:
     ev1_csv_list.append(ev1_csv_jsondata[key])
 
-# sbg_csv_jsonfile = open("sbg_csv.json", "r")
-# sbg_csv_jsondata = json.load(sbg_csv_jsonfile)
-# sbg_csv_list = []
-# for key in sbg_csv_jsondata:
-#     sbg_csv_list.append(sbg_csv_jsondata[key])
+sbg_csv_jsonfile = open("sbg_csv.json", "r")
+sbg_csv_jsondata = json.load(sbg_csv_jsonfile)
+sbg_csv_list = []
+for key in sbg_csv_jsondata:
+    sbg_csv_list.append(sbg_csv_jsondata[key])
 ##########################################################
 
 ###結果(グラフ)の保存先###
@@ -73,10 +73,10 @@ for csv_num in range(len(ev1_csv_list)):
     for key in allan_jsondata:
         ev1_allan_varialance[ev1_csv_list[csv_num]][key] = []
 
-# for csv_num in range(len(sbg_csv_list)):
-#     sbg_allan_varialance[sbg_csv_list[csv_num]] = {}
-#     for key in allan_jsondata:
-#         sbg_allan_varialance[sbg_csv_list[csv_num]][key] = []
+for csv_num in range(len(sbg_csv_list)):
+    sbg_allan_varialance[sbg_csv_list[csv_num]] = {}
+    for key in allan_jsondata:
+        sbg_allan_varialance[sbg_csv_list[csv_num]][key] = []
 
 ###平均値計算用配列###
 ev1_all_data_average= {}
@@ -88,10 +88,10 @@ for csv_num in range(len(ev1_csv_list)):
     for key in allan_jsondata:
         ev1_all_data_average[ev1_csv_list[csv_num]][key] = []
 
-# for csv_num in range(len(sbg_csv_list)):
-#     sbg_all_data_average[sbg_csv_list[csv_num]] = {}
-#     for key in allan_jsondata:
-#         sbg_all_data_average[ev1_csv_list[csv_num]][key] = []
+for csv_num in range(len(sbg_csv_list)):
+    sbg_all_data_average[sbg_csv_list[csv_num]] = {}
+    for key in allan_jsondata:
+        sbg_all_data_average[ev1_csv_list[csv_num]][key] = []
 ###################################################################################################
 
 
@@ -149,57 +149,57 @@ if len(ev1_csv_list) > 0:
 
 ####################################################################
 
-###sbgのアラン分散計算###
-# if len(sbg_csv_list) > 0:
-#     for csv_num in range(len(sbg_csv_list)):
-#         with open(sbg_csv_list[csv_num], newline="") as file:
-#             csv_data = csv.DictReader(file)
-#             data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
+##sbgのアラン分散計算###
+if len(sbg_csv_list) > 0:
+    for csv_num in range(len(sbg_csv_list)):
+        with open(sbg_csv_list[csv_num], newline="") as file:
+            csv_data = csv.DictReader(file)
+            data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
 
-#             for key in allan_data_key:
+            for key in allan_data_key:
 
-#                 ###allan_data_keyに格納されたデータ項目とcsvのヘッダーが一致するデータのみ計算対象とする###
-#                 ###取得サンプル数に応じて平均値を求めて、平均値を格納する配列に追加###
-#                 # ###平均値を求める途中でサンプル数が足りなくなったら、平均値計算をやめ、アラン分散を求める処理に進む###
-#                 if key not in csv_data.fieldnames:
-#                     continue
+                ###allan_data_keyに格納されたデータ項目とcsvのヘッダーが一致するデータのみ計算対象とする###
+                ###取得サンプル数に応じて平均値を求めて、平均値を格納する配列に追加###
+                # ###平均値を求める途中でサンプル数が足りなくなったら、平均値計算をやめ、アラン分散を求める処理に進む###
+                if key not in csv_data.fieldnames:
+                    continue
 
-#                 ###1列分のデータを取得サンプル数に応じて平均値を求め、平均値配列に格納###
-#                 for data_count in range(len(sbg_sampling_data_num)):
-#                     cycle_num = int(sbg_sampling_data_num[data_count])
-#                     current_cycle_num = 0
-#                     value = 0 
-#                     average = 0
-#                     average_sum = 0
-#                     allan_value = 0
-#                     sbg_average[key].clear()
+                ###1列分のデータを取得サンプル数に応じて平均値を求め、平均値配列に格納###
+                for data_count in range(len(sbg_sampling_data_num)):
+                    cycle_num = int(sbg_sampling_data_num[data_count])
+                    current_cycle_num = 0
+                    value = 0 
+                    average = 0
+                    average_sum = 0
+                    allan_value = 0
+                    sbg_average[key].clear()
 
-#                     for row_data in data_list:
-#                         if row_data[key] == "" :
-#                             break
+                    for row_data in data_list:
+                        if row_data[key] == "" :
+                            break
         
-#                         value += float(row_data[key])
-#                         current_cycle_num += 1
+                        value += float(row_data[key])
+                        current_cycle_num += 1
 
-#                         if current_cycle_num == cycle_num:
-#                             average = value / cycle_num
-#                             sbg_average[key].append(average)
-#                             current_cycle_num = 0
-#                             value = 0
+                        if current_cycle_num == cycle_num:
+                            average = value / cycle_num
+                            sbg_average[key].append(average)
+                            current_cycle_num = 0
+                            value = 0
 
-#                     ###アラン分散計算###
-#                     if len(sbg_average[key]) >= 2:
-#                         for ave_value_index in range(len(sbg_average[key]) - 1):
-#                             average_sum += (
-#                                 sbg_average[key][ave_value_index]
-#                                 - sbg_average[key][ave_value_index + 1]
-#                             ) ** 2
+                    ###アラン分散計算###
+                    if len(sbg_average[key]) >= 2:
+                        for ave_value_index in range(len(sbg_average[key]) - 1):
+                            average_sum += (
+                                sbg_average[key][ave_value_index]
+                                - sbg_average[key][ave_value_index + 1]
+                            ) ** 2
 
-#                         allan_value = 0.5 * average_sum / (len(sbg_average[key]) - 1)
-#                     else:
-#                         allan_value = float("nan")
+                        allan_value = 0.5 * average_sum / (len(sbg_average[key]) - 1)
+                    else:
+                        allan_value = float("nan")
 
-#                     sbg_allan_varialance[sbg_csv_list[csv_num]][key].append(allan_value)
+                    sbg_allan_varialance[sbg_csv_list[csv_num]][key].append(allan_value)
 ####################################################################
 
 ###ev1_seriesの平均値計算###
@@ -229,29 +229,29 @@ if len(ev1_csv_list) > 0:
                 ev1_all_data_average[ev1_csv_list[csv_num]][key].append(average)
 
 ###sbgの平均値計算###
-# if len(sbg_csv_list) > 0:
-#     for csv_num in range(len(sbg_csv_list)):
-#         with open(sbg_csv_list[csv_num], newline="") as file:
-#             csv_data = csv.DictReader(file)
-#             data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
+if len(sbg_csv_list) > 0:
+    for csv_num in range(len(sbg_csv_list)):
+        with open(sbg_csv_list[csv_num], newline="") as file:
+            csv_data = csv.DictReader(file)
+            data_list = list(csv_data) ###何度も同じcsvデータを使用できるようにする###
 
-#             for key in allan_data_key:
+            for key in allan_data_key:
 
-#                 if key not in csv_data.fieldnames:
-#                     continue
+                if key not in csv_data.fieldnames:
+                    continue
 
-#                 data_len = 0
-#                 value = 0 
-#                 average = 0
+                data_len = 0
+                value = 0 
+                average = 0
 
-#                 for row_data in data_list:
-#                     if row_data[key] == "" :
-#                         average = value / data_len
-#                         sbg_all_data_average[sbg_csv_list[csv_num]][key].append(average)
-#                         break
-#                     else:
-#                         data_len += 1
-#                         value += float(row_data[key])
+                for row_data in data_list:
+                    if row_data[key] == "" :
+                        average = value / data_len
+                        sbg_all_data_average[sbg_csv_list[csv_num]][key].append(average)
+                        break
+                    else:
+                        data_len += 1
+                        value += float(row_data[key])
 
 
 
@@ -265,9 +265,9 @@ for key in allan_data_key:
         
         plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"EV-1_N{csv_num + 1}", marker=marker_list[csv_num], linestyle = "-")
 
-    # for csv_num in range(len(sbg_csv_list)):
-    #     y = np.array(sbg_allan_varialance[sbg_csv_list[csv_num]][key])
-    #     plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"sbg_N{csv_num + 1}", marker=marker_list[csv_num], linestyle="--")
+    for csv_num in range(len(sbg_csv_list)):
+        y = np.array(sbg_allan_varialance[sbg_csv_list[csv_num]][key])
+        plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"sbg_N{csv_num + 1}", marker=marker_list[csv_num], linestyle="--")
 
     plt.xlabel("average_time [s]")
     if key in ("ax", "ay", "az"):
@@ -297,9 +297,9 @@ for key in allan_data_key:
         
         plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"EV-1_N{csv_num + 1}", marker=marker_list[csv_num], linestyle = "-")
 
-    # for csv_num in range(len(sbg_csv_list)):
-    #     y = np.array(sbg_all_data_average[sbg_csv_list[csv_num]][key])
-    #     plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"sbg_N{csv_num + 1}", marker=marker_list[csv_num], linestyle="--")
+    for csv_num in range(len(sbg_csv_list)):
+        y = np.array(sbg_all_data_average[sbg_csv_list[csv_num]][key])
+        plt.plot(x, y, color=plt.cm.tab10(csv_num), label=f"sbg_N{csv_num + 1}", marker=marker_list[csv_num], linestyle="--")
 
     plt.xlabel("average_num")
     if key in ("ax", "ay", "az"):
